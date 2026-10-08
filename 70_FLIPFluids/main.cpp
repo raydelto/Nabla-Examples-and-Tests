@@ -786,18 +786,9 @@ public:
 
         const auto resourceIx = m_realFrameIx % MaxFramesInFlight;
 
-        // `getDefault*` blocks until a device connects, and windows without input (XCB for now) never get one
-        const auto hasChannel = [](auto& channels) -> bool
-        {
-            std::unique_lock lock(channels.lock);
-            return !channels.channels.empty();
-        };
-        const bool hasInput = hasChannel(m_inputSystem->m_mouse) && hasChannel(m_inputSystem->m_keyboard);
-        if (hasInput)
-        {
-            m_inputSystem->getDefaultMouse(&mouse);
-            m_inputSystem->getDefaultKeyboard(&keyboard);
-        }
+        // `getDefault*` blocks until a device connects and windows without input (XCB for now) never get one,
+        // the `tryGetDefault*` variants check and bind under one lock, so a disconnect falls back to autoplay
+        const bool hasInput = m_inputSystem->tryGetDefaultMouse(&mouse) && m_inputSystem->tryGetDefaultKeyboard(&keyboard);
 
         auto updatePresentationTimestamp = [&]()
         {
